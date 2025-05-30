@@ -1,0 +1,112 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo para clínicas veterinárias
+model Clinic {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String
+  address   String
+  logo      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  users        User[]
+  pets         Pet[]
+  appointments Appointment[]
+
+  @@map("clinics")
+}
+
+// Modelo para usuários da clínica
+model User {
+  id        String   @id @default(cuid())
+  clinicId  String   @map("clinic_id")
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("user") // admin, user
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@map("users")
+}
+
+// Modelo para animais
+model Pet {
+  id          String   @id @default(cuid())
+  clinicId    String   @map("clinic_id")
+  name        String
+  species     String
+  breed       String
+  gender      String
+  age         String
+  color       String
+  ownerName   String   @map("owner_name")
+  ownerPhone  String   @map("owner_phone")
+  photo       String?
+  observations String?  @db.Text
+  lostStatus  Boolean  @default(false) @map("lost_status")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  clinic      Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  documents   Document[]
+  appointments Appointment[]
+
+  @@map("pets")
+}
+
+// Modelo para documentos dos animais
+model Document {
+  id        String   @id @default(cuid())
+  petId     String   @map("pet_id")
+  name      String
+  filePath  String   @map("file_path")
+  fileType  String   @map("file_type")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+// Modelo para agendamentos
+model Appointment {
+  id          String   @id @default(cuid())
+  petId       String?  @map("pet_id")
+  clinicId    String   @map("clinic_id")
+  dateTime    DateTime @map("date_time")
+  petName     String   @map("pet_name")
+  ownerName   String   @map("owner_name")
+  ownerPhone  String   @map("owner_phone")
+  status      String   @default("pending") // pending, confirmed, canceled
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relacionamentos
+  clinic     Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  pet        Pet?      @relation(fields: [petId], references: [id], onDelete: SetNull)
+
+  @@map("appointments")
+}
